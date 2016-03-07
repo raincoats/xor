@@ -27,9 +27,16 @@ int main(int argc, char *argv[])
 
 	char *one = argv[1];
 	char *two = argv[2];
+	int xor;
 
 	while (*one && *two) {
-		putc(*one++ ^ *two++, stdout);
+		xor = (*one++ ^ *two++);
+
+		// if outside the printable ascii range
+		if ((xor < 0x20) || (xor > 0x7e))
+			printf("\\x%.2x", xor);
+		else
+			putc(xor, stdout);
 	}
 
 	if (isatty(1) && isatty(2) && isatty(0))
