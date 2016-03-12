@@ -2,4 +2,5 @@
 !/xor.c
 !/Makefile
 !/.gitignore
+!/xor-string.c
 
