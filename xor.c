@@ -18,7 +18,7 @@ void *memfrob (void *s, size_t n, int x)
 		// avoiding xor'ing null bytes, because (key ^ byte) == key.
 		// TODO: make this more efficient..
 		if ((*p != x) && (*p != 0)) {
-			*p ^= x;	
+			*p ^= x;
 		}
 		p++;
 	}
