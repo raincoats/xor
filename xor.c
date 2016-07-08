@@ -14,12 +14,16 @@ void *memfrob (void *s, size_t n, int x)
 {
 	char *p = (char *) s;
 
-	while (n-- > 0)
-		*p++ ^= x;
-
+	while (n-- > 0) {
+		// avoiding xor'ing null bytes, because (key ^ byte) == key.
+		// TODO: make this more efficient..
+		if ((*p != x) && (*p != 0)) {
+			*p ^= x;			
+		}
+		p++;
+	}
 	return s;
 }
-
 
 int main(int argc, char *argv[])
 {
