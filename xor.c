@@ -10,14 +10,14 @@
 #include <err.h>
 
 // stolen from glibc
-void *memfrob (void *s, size_t n, int x)
+void *memfrob (void *s, size_t n, unsigned int x)
 {
-	char *p = (char *) s;
+	unsigned char *p = (unsigned char *) s;
 
 	while (n-- > 0) {
-		// avoiding xor'ing null bytes, because (key ^ byte) == key.
-		// TODO: make this more efficient..
-		if ((*p != x) && (*p != 0)) {
+		//*p ^= x;
+		if (! ((*p == x) || (*p == 0))) {
+			// avoiding xor'ing null bytes, because (key ^ byte) == key.
 			*p ^= x;
 		}
 		p++;
@@ -27,10 +27,11 @@ void *memfrob (void *s, size_t n, int x)
 
 int main(int argc, char *argv[])
 {
-	//       biffo of 32   ~ 137MiB/s
-	// biffo of 4096 * 8   ~ 1.6 GiB/s
+	//       biffo of 32    ~ 137MiB/s
+	// biffo of 4096 * 8    ~ 1.1 GiB/s
+	// above, s/clang/gcc:  ~ 300MiB/s
 	unsigned int biffo = 4096 * 8;
-	char biffer[biffo];
+	unsigned char biffer[biffo];
 	unsigned int cipher = 0xff;
 	int size = 0;
 
