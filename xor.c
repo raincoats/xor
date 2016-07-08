@@ -5,48 +5,36 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/uio.h>
+#include <unistd.h>
+
+// stolen from glibc
+void *memfrob (void *s, size_t n, int x)
+{
+	char *p = (char *) s;
+
+	while (n-- > 0)
+		*p++ ^= x;
+
+	return s;
+}
+
 
 int main(int argc, char *argv[])
 {
-	if (argc < 2) {
-		fprintf(stderr, "%s: need an filename\n", argv[0]);
-		return 1;
-	}
-	else if (argc < 3) {
-		fprintf(stderr, "%s: need a byte (like ff, or 0a, or whatev)\n", argv[0]);
-		return 1;
-	}
+	//       biffo of 32   ~ 137MiB/s
+	// biffo of 4096 * 8   ~ 1.6 GiB/s
+	unsigned int biffo = 4096 * 8;
+	char biffer[biffo];
+	int size = 0;
 
-
-	//int cipher = 0xff;
-	int cipher = strtol(argv[2], NULL, 16);
-	//int byte = *argv[1];
-	char *filename = argv[1];
-	char *outfile;
-	FILE *fp = fopen(filename, "rb");
-
-	if ((cipher < 0x00) || (cipher > 0xff)) {
-		fprintf(stderr, "%s: “%#2x”: must be between 0x00 and 0xff\n", 
-			argv[0], cipher);
-		return 1;
+	while ((size = read(0, biffer, biffo)) > 0)
+	{
+		memfrob(biffer, size, 0xF1);
+		write(1, biffer, size);
 	}
 
-	if (! fp) {
-		fprintf(stderr, "%s: could not open file “%s”\n", argv[0], filename);
-		return 1;
-	}
 
- 	fprintf(stderr, "%s: cipher is 0x%02x\n", argv[0], cipher);
-
-	int c;
-    while ((c = fgetc(fp)) != EOF) { // standard C I/O file reading loop
-       putchar(c ^ cipher);
-    }
-
-    fclose(fp);
-
-//	printf("%.2x", cipher ^ byte);
-//	putchar(0x0a);
 	return 0;
 }
 
