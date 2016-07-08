@@ -7,18 +7,9 @@ function good {
 function pain {
 	printf -- "\033[38;5;196m["'!'"]\033[m %s\n" "$*"
 }
-
-function random_byte {
-	if hash xxd; then
-		xxd -p -len 1 /dev/urandom
-	else
-		seq 0 255 | xargs printf -- "%02x\n" | shuf -n1
-	fi
-}
 function random_file {
 	echo $testfiles | tr ' ' '\n' | shuf -n1
 }
-
 function cleanup {
 	[ ! -z "$tmp1" ] && rm -f "${tmp1:?}"
 	[ ! -z "$tmp2" ] && rm -f "${tmp2:?}"
@@ -36,8 +27,6 @@ trap 'cleanup' SIGTERM
 make clean
 make
 
-tmp1=$(mktemp /tmp/xor-test-XXXXXXXX)
-tmp2=$(mktemp /tmp/xor-test-XXXXXXXX)
 tests=${1:-255}
 testfiles=(
 	/etc/passwd
@@ -68,23 +57,22 @@ good "hasher is $hasher"
 
 for n in {0..$tests}
 do
-	b=$(random_byte)
+	b=$(printf "%02x" "$[ $n % 255 ]")
 	f=$(random_file)
 	
 	[ ! -f "$f" ] && f=$0
 
-	./xor $b 2>/dev/null < $f    > $tmp1
-	./xor $b 2>/dev/null < $tmp1 > $tmp2
-
 	hash1=$($hasher < $f    | cut -d' ' -f1)
-	hash2=$($hasher < $tmp2 | cut -d' ' -f1)
+	hash2=$(./xor $b 2>/dev/null < $f \
+	        | ./xor $b 2>/dev/null \
+	        | $hasher \
+	        | cut -d' ' -f1)
 
 	if [ "$hash1" = "$hash2" ]; then
 		good "[$n/$tests] PASS:     0x$b $f"
 
 		if [ ! -z $VERBOSE ]; then
-			good "$b < $f > $tmp1"
-			good "$b < $tmp1 > $tmp2"
+			good "./xor $b 2>/dev/null < $f | ./xor $b 2>/dev/null"
 			good "[$n/$tests] EXPECTED: $hash1"
 			good "[$n/$tests] GOT:      $hash2"
 			printf "\n"
@@ -96,9 +84,5 @@ do
 		pain "GOT:      $hash2"
 		exit 1
 	fi
-	# bsd sleep doesnt support 0.1s
-	sleep 0.1s || sleep 1
-	:>$tmp1
-	:>$tmp2
 done
 
