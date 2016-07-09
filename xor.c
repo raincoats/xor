@@ -9,13 +9,12 @@
 #include <unistd.h>
 #include <err.h>
 
-// stolen from glibc
-void *memfrob (void *s, size_t n, unsigned int x)
+// stolen from glibc's memfrob()
+void *xor (void *s, size_t n, unsigned int x)
 {
 	unsigned char *p = (unsigned char *) s;
 
 	while (n-- > 0) {
-		//*p ^= x;
 		if (! ((*p == x) || (*p == 0))) {
 			// avoiding xor'ing null bytes, because (key ^ byte) == key.
 			*p ^= x;
@@ -27,19 +26,17 @@ void *memfrob (void *s, size_t n, unsigned int x)
 
 int main(int argc, char *argv[])
 {
-	//       biffo of 32    ~ 137MiB/s
-	// biffo of 4096 * 8    ~ 1.1 GiB/s
-	// above, s/clang/gcc:  ~ 300MiB/s
-	unsigned int biffo = 4096 * 8;
-	unsigned char biffer[biffo];
+	// 4096 * 8 is fast. idk why. is it too much?
+	unsigned int bif_size = 4096 * 8;
+	unsigned char biffer[bif_size];
 	unsigned int cipher = 0xff;
-	int size = 0;
+	unsigned int size = 0;
 
 	if (argc < 2) {
 		dprintf(2, "%s: no cipher provided. using 0x%02x\n", argv[0], cipher);
 	}
 	else {
-		int e = (cipher = (int)strtol(argv[1], NULL, 16));
+		unsigned int e = (cipher = (unsigned int)strtol(argv[1], NULL, 16));
 		if ((! e) && (cipher != 0)) {
 			err(e, "could not convert %s to hex", argv[1]);
 			return 1;
@@ -51,9 +48,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	while ((size = read(0, biffer, biffo)) > 0)
+	while ((size = read(0, biffer, bif_size)) > 0)
 	{
-		memfrob(biffer, size, cipher);
+		xor(biffer, size, cipher);
 		write(1, biffer, size);
 	}
 
