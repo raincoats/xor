@@ -45,8 +45,8 @@ testfiles=(
 hashers=(
 	md5sum
 	sha1sum
-	sha256sum
 	sha512sum
+	sha256sum
 )
 for prog in $hashers; do
 	hash $prog && hasher=$prog
@@ -57,7 +57,7 @@ good "hasher is $hasher"
 
 for n in {0..$tests}
 do
-	b=$(printf "%02x" "$[ $n % 255 ]")
+	b=$(printf "%02x" "$[ $n % 256 ]")
 	f=$(random_file)
 	
 	[ ! -f "$f" ] && f=$0

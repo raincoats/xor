@@ -44,10 +44,7 @@ int main(int argc, char *argv[])
 			err(e, "could not convert %s to hex", argv[1]);
 			return 1;
 		}
-		if (cipher < 0x100) {
-			dprintf(2, "%s: using 0x%02X\n", argv[0], cipher);
-		}
-		else {
+		else if (cipher > 0xFF) {
 			dprintf(2, "%s: cipher 0x%02X is out of range.\n", argv[0], cipher);
 			dprintf(2, "%s: must be between 0x00 and 0xFF.\n", argv[0]);
 			return 1;
