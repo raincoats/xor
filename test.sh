@@ -33,7 +33,6 @@ testfiles=(
 	/bin/bash
 	/etc/group
 	/usr/include/sys/syscall.h
-	/proc/cpuinfo
 	$0
 	./xor
 	/bin/cat
