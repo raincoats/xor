@@ -9,20 +9,42 @@
 #include <unistd.h>
 #include <err.h>
 
+#ifdef DONT_XOR_NULLS
+/*
+ *  the original intention of this program was to obfusticate binaries. since
+ *  binaries seem to have a whole bunch of \0's at the bottom, and anything
+ *  xor'd by 0 is itself, it would just print the xor key.
+ *
+ *  the purpose of this program has changed since then, to be a general xor-er.
+ *  so now it xor's every character, unless compiled with -DDONT_XOR_NULLS.
+ *
+ *  TODO: copy paste some getopt example and make it work
+ *
+ */
 // stolen from glibc's memfrob()
 void *xor (void *s, size_t n, unsigned int x)
 {
 	unsigned char *p = (unsigned char *) s;
-
 	while (n-- > 0) {
 		if (! ((*p == x) || (*p == 0))) {
-			// avoiding xor'ing null bytes, because (key ^ byte) == key.
 			*p ^= x;
 		}
 		p++;
 	}
 	return s;
 }
+#else
+void *xor (void *s, size_t n, unsigned int x)
+{
+	unsigned char *p = (unsigned char *) s;
+
+	while (n-- > 0)
+		*p++ ^= x;
+
+	return s;
+}
+#endif
+
 
 int main(int argc, char *argv[])
 {
