@@ -1,6 +1,9 @@
 all:
 	gcc -Wall -fstack-protector-strong -O2 -march=native xor.c -o xor
 
+debug:
+	gcc -Wall -ggdb3 -g3 -O0 -fbuiltin xor.c -o xor
+
 install:
 	cp xor /usr/local/bin/xor
 
