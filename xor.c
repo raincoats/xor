@@ -82,7 +82,6 @@ uint8_t arg_to_cipher(char *arg)
 	}
 
 	cipher = (uint8_t)c;
-	dprintf(2, "using cipher '0x%02x'\n", cipher);
 	cipher_given = true;
 	return true;
 }
