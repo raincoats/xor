@@ -62,8 +62,8 @@ do
 	[ ! -f "$f" ] && f=$0
 
 	hash1=$($hasher < $f    | cut -d' ' -f1)
-	hash2=$(./xor $b 2>/dev/null < $f \
-	        | ./xor $b 2>/dev/null \
+	hash2=$(./xor -c $b 2>/dev/null < $f \
+	        | ./xor -c $b 2>/dev/null \
 	        | $hasher \
 	        | cut -d' ' -f1)
 
@@ -71,7 +71,7 @@ do
 		good "[$n/$tests] PASS:     0x$b $f"
 
 		if [ ! -z $VERBOSE ]; then
-			good "./xor $b 2>/dev/null < $f | ./xor $b 2>/dev/null"
+			good "./xor -c $b 2>/dev/null < $f | ./xor -c $b 2>/dev/null"
 			good "[$n/$tests] EXPECTED: $hash1"
 			good "[$n/$tests] GOT:      $hash2"
 			printf "\n"
