@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 uint8_t cipher = 0xff;
 bool cipher_given = false;
@@ -117,7 +118,10 @@ int main(int argc, char *argv[])
 	while ((size = read(0, biffer, bif_size)) > 0)
 	{
 		xor(biffer, size, cipher);
-		write(1, biffer, size);
+		if (write(1, biffer, size) == -1) {
+			perror("writing to stdout");
+			return 1;
+		}
 	}
 
 	if (isatty(1))
