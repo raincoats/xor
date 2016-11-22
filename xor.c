@@ -29,7 +29,7 @@ void usage(char *argv0)
 
 void version()
 {
-	dprintf(2, "xor - version 0.2\n"
+	dprintf(2, "xor - version 0.2.1\n"
 		       "https://github.com/raincoats/\n");
 	exit(2);
 }
