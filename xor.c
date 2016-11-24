@@ -7,8 +7,10 @@
 #include <getopt.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <assert.h>
 
-uint8_t cipher = 0xff;
+unsigned char *cipher;
+long cipher_len = 1;
 bool cipher_given = false;
 bool xor_nulls = false;
 
@@ -39,39 +41,32 @@ void version()
  *   this is where the magic happens
  *   adapted from glibc's memfrob()
  */
-void *xor (void *s, size_t n, uint8_t x)
+void *xor (void *s, size_t n, void *x, size_t y)
 {
 	unsigned char *p = (unsigned char *)s;
+	unsigned char *o = (unsigned char *)x;
+	size_t c = y;
 
-	/*
-	 *   since anything xor'd by 0 is itself, you may want to ignore null bytes
-	 *   when xor'ing, as it would just print the xor key. so you can pass the
-	 *   -0 flag to do this.
-	 */
-	if (xor_nulls == true)
-	{
-		while (n --> 0) {
-			if (! ((*p == x) || (*p == 0))) {
-				*p ^= x;
-			}
-			p++;
-		}
-	}
-	else
-	{
 		while (n --> 0)
-			*p++ ^= x;
-	}
+		{
+			dprintf(2, "\033[38;5;225mc=%ld o=%02x y=%02x\033[m\n", c, (unsigned int)*o, (unsigned int)y);
+			*p++ ^= *o++;
+			
+			if (--c == 0)
+			{
+				c = y;
+				o -= c;
+			}
+		}
 
 	return s;
 }
 
-uint8_t arg_to_cipher(char *arg)
+bool arg_to_byte(char *arg)
 {
-	if (arg == NULL)
-		return false;
+	assert(arg != NULL);
 
-	uintmax_t c = (uintmax_t)strtol(optarg, NULL, 16);;
+	uintmax_t c = (uintmax_t)strtol(arg, NULL, 16);
 
 	if (errno == EINVAL) {
 		err(errno, "could not convert '%s' to hex", arg);
@@ -82,7 +77,24 @@ uint8_t arg_to_cipher(char *arg)
 		exit(1);
 	}
 
-	cipher = (uint8_t)c;
+	// memset(cipher, (uint8_t)strtol(arg, NULL, 16), 0);
+	uint8_t e = (uint8_t)strtol(arg, NULL, 16);
+	cipher = (unsigned char *)&e;
+
+	// strncpy(cipher, (char)&c, 1);
+	cipher_len = 1;
+	dprintf(2, "\033[38;5;215mCIPHER: %s (0x%x), len=%ld\033[m\n", cipher, (uint8_t)*cipher, cipher_len);
+	cipher_given = true;
+	return true;
+}
+
+bool arg_to_cipher(char *arg)
+{
+	assert(arg != NULL);
+
+	cipher = (unsigned char *)arg;
+	cipher_len = strlen(arg);
+	// dprintf(2, "\033[38;5;196mCIPHER: %s (0x%x)\033[m, len=%ld\n", cipher, (int)*cipher, cipher_len);
 	cipher_given = true;
 	return true;
 }
@@ -93,12 +105,13 @@ void do_getopts(int argc, char **argv)
 {
 	int o;
 
-	while ((o = getopt(argc, argv, "hV0c:")) != -1) {
+	while ((o = getopt(argc, argv, "hV0c:s:")) != -1) {
 		switch(o) {
 			case 'h': usage(argv[0]);        break;
 			case 'V': version();             break;
 			case '0': xor_nulls = true;      break;
-			case 'c': arg_to_cipher(optarg); break;
+			case 'c': arg_to_byte(optarg);   break;
+			case 's': arg_to_cipher(optarg); break;
 		}
 	}
 }
@@ -111,12 +124,15 @@ int main(int argc, char *argv[])
 	
 	do_getopts(argc, argv);
 
-	if (! cipher_given)
-		dprintf(2, "%s: no cipher provided. using 0x%02x\n", argv[0], cipher);
+	if (! cipher_given) {
+		cipher[0] = '\xff';
+		dprintf(2, "%s: no cipher provided. using 0x%02x\n", argv[0], cipher[0]);
+	}
 
 	while ((size = read(0, biffer, bif_size)) > 0)
 	{
-		xor(biffer, size, cipher);
+		dprintf(2, "\033[38;5;2mCIPHER: %s (0x%x), len=%ld\033[m\n", cipher, (uint8_t)*cipher, cipher_len);
+		xor(biffer, size, cipher, cipher_len);
 		if (write(1, biffer, size) == -1) {
 			perror("writing to stdout");
 			return 1;
