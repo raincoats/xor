@@ -20,7 +20,7 @@ void usage(char *argv0)
 	dprintf(2,
 		"xor - performs an xor on stdin and a byte given with -c\n"
 		"usage: %s [OPTIONS] -c byte\n"
-		"   -c byte   the byte (in hex) to xor stdin with\n"
+		// "   -c byte   the byte (in hex) to xor stdin with\n"
 		"   -0        ignore null bytes in input\n"
 		"   -V        version\n"
 		"   -h        help\n"
@@ -62,6 +62,9 @@ void *xor (void *s, size_t n, void *x, size_t y)
 	return s;
 }
 
+/*
+             DISASTER BELOW
+
 bool arg_to_byte(char *arg)
 {
 	assert(arg != NULL);
@@ -77,16 +80,22 @@ bool arg_to_byte(char *arg)
 		exit(1);
 	}
 
-	// memset(cipher, (uint8_t)strtol(arg, NULL, 16), 0);
-	uint8_t e = (uint8_t)strtol(arg, NULL, 16);
-	cipher = (unsigned char *)&e;
-
+	// memset(cipher, (uint8_t)strtol(arg, NULL, 16), 1);
+	char *e = (char *)strtol(arg, NULL, 16);
+	// unsigned char e = (unsigned char)strtol(arg, NULL, 16);
+	// uint8_t *p = &e;
+	// cipher = (unsigned char *)p;
+	// cipher = &e;
+	strncpy((char *)cipher, e, 1);
+	// *cipher = (unsigned char *)e;
 	// strncpy(cipher, (char)&c, 1);
 	cipher_len = 1;
-	dprintf(2, "\033[38;5;215mCIPHER: %s (0x%x), len=%ld\033[m\n", cipher, (uint8_t)*cipher, cipher_len);
+	dprintf(2, "\033[38;5;215mCIPHER: %s (0x%x), len=%ld\033[m\n",
+		cipher, (uint8_t)*cipher, cipher_len);
 	cipher_given = true;
 	return true;
 }
+*/
 
 bool arg_to_cipher(char *arg)
 {
@@ -110,7 +119,7 @@ void do_getopts(int argc, char **argv)
 			case 'h': usage(argv[0]);        break;
 			case 'V': version();             break;
 			case '0': xor_nulls = true;      break;
-			case 'c': arg_to_byte(optarg);   break;
+			// case 'c': arg_to_byte(optarg);   break;
 			case 's': arg_to_cipher(optarg); break;
 		}
 	}
@@ -124,7 +133,7 @@ int main(int argc, char *argv[])
 	
 	do_getopts(argc, argv);
 
-	if (! cipher_given) {
+	if (cipher_given == false) {
 		cipher[0] = '\xff';
 		dprintf(2, "%s: no cipher provided. using 0x%02x\n", argv[0], cipher[0]);
 	}
