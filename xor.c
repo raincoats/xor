@@ -9,24 +9,25 @@
 #include <stdint.h>
 #include <assert.h>
 
-unsigned char *cipher;
-long cipher_len = 1;
+uintmax_t cipher_len = 1;
+uint8_t cipher_byte;
+unsigned char *cipher_str = NULL;
 bool cipher_given = false;
-bool xor_nulls = false;
 
 
 void usage(char *argv0)
 {
 	dprintf(2,
 		"xor - performs an xor on stdin and a byte given with -c\n"
-		"usage: %s [OPTIONS] -c byte\n"
-		// "   -c byte   the byte (in hex) to xor stdin with\n"
-		"   -0        ignore null bytes in input\n"
+		"usage: %s [OPTIONS] -s string\n"
+		"   -s        string to xor stdin with\n"
+		"   -s        byte to xor stdin with\n"
 		"   -V        version\n"
 		"   -h        help\n"
 		"\n"
-		"example: cat /etc/passwd | %s -c ff\n"
-		, argv0, argv0);
+		"example: cat /etc/passwd | %s -s hello\n"
+		"         cat /etc/passwd | %s -c 41\n"
+		, argv0, argv0, argv0);
 	exit(2);
 }
 
@@ -49,7 +50,6 @@ void *xor (void *s, size_t n, void *x, size_t y)
 
 		while (n --> 0)
 		{
-			dprintf(2, "\033[38;5;225mc=%ld o=%02x y=%02x\033[m\n", c, (unsigned int)*o, (unsigned int)y);
 			*p++ ^= *o++;
 			
 			if (--c == 0)
@@ -62,48 +62,21 @@ void *xor (void *s, size_t n, void *x, size_t y)
 	return s;
 }
 
-/*
-             DISASTER BELOW
+bool arg_to_cipher(char *arg)
+{
+	assert(arg != NULL);
+
+	cipher_str = (unsigned char *)arg;
+	cipher_len = strlen(arg);
+	cipher_given = true;
+	return true;
+}
 
 bool arg_to_byte(char *arg)
 {
 	assert(arg != NULL);
 
-	uintmax_t c = (uintmax_t)strtol(arg, NULL, 16);
-
-	if (errno == EINVAL) {
-		err(errno, "could not convert '%s' to hex", arg);
-		exit(1);
-	}
-	if (c > UINT8_MAX) {
-		dprintf(2, "'0x%s': is too big. must be between 0x00 and 0xFF\n", arg);
-		exit(1);
-	}
-
-	// memset(cipher, (uint8_t)strtol(arg, NULL, 16), 1);
-	char *e = (char *)strtol(arg, NULL, 16);
-	// unsigned char e = (unsigned char)strtol(arg, NULL, 16);
-	// uint8_t *p = &e;
-	// cipher = (unsigned char *)p;
-	// cipher = &e;
-	strncpy((char *)cipher, e, 1);
-	// *cipher = (unsigned char *)e;
-	// strncpy(cipher, (char)&c, 1);
-	cipher_len = 1;
-	dprintf(2, "\033[38;5;215mCIPHER: %s (0x%x), len=%ld\033[m\n",
-		cipher, (uint8_t)*cipher, cipher_len);
-	cipher_given = true;
-	return true;
-}
-*/
-
-bool arg_to_cipher(char *arg)
-{
-	assert(arg != NULL);
-
-	cipher = (unsigned char *)arg;
-	cipher_len = strlen(arg);
-	// dprintf(2, "\033[38;5;196mCIPHER: %s (0x%x)\033[m, len=%ld\n", cipher, (int)*cipher, cipher_len);
+	cipher_byte = (uint8_t)strtol(arg, NULL, 16);
 	cipher_given = true;
 	return true;
 }
@@ -114,13 +87,12 @@ void do_getopts(int argc, char **argv)
 {
 	int o;
 
-	while ((o = getopt(argc, argv, "hV0c:s:")) != -1) {
+	while ((o = getopt(argc, argv, "hVs:c:")) != -1) {
 		switch(o) {
 			case 'h': usage(argv[0]);        break;
 			case 'V': version();             break;
-			case '0': xor_nulls = true;      break;
-			// case 'c': arg_to_byte(optarg);   break;
 			case 's': arg_to_cipher(optarg); break;
+			case 'c': arg_to_byte(optarg);   break;
 		}
 	}
 }
@@ -133,14 +105,22 @@ int main(int argc, char *argv[])
 	
 	do_getopts(argc, argv);
 
-	if (cipher_given == false) {
-		cipher[0] = '\xff';
-		dprintf(2, "%s: no cipher provided. using 0x%02x\n", argv[0], cipher[0]);
+	if (cipher_given == false)
+		usage(argv[0]);
+
+	void *cipher;
+
+	if (cipher_str != NULL) {
+		cipher = cipher_str;
+		cipher_len = strlen((char *)cipher_str);
+	}
+	else {
+		cipher = &cipher_byte;
+		cipher_len = 1;
 	}
 
 	while ((size = read(0, biffer, bif_size)) > 0)
 	{
-		dprintf(2, "\033[38;5;2mCIPHER: %s (0x%x), len=%ld\033[m\n", cipher, (uint8_t)*cipher, cipher_len);
 		xor(biffer, size, cipher, cipher_len);
 		if (write(1, biffer, size) == -1) {
 			perror("writing to stdout");
