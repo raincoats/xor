@@ -1,8 +1,9 @@
 /*
 !/xor.c
+!/xor.h
 !/Makefile
 !/.gitignore
-!/test.sh
+!/test.php
 !/README.md
 !/LICENSE.md
 
